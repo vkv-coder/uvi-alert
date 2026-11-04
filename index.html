@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UVI Alert</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1E7D4B">
+<style>
+  :root{
+    --green:#1E7D4B; --green-dark:#145c38; --bg:#F4FBF6; --card:#ffffff;
+    --border:#e1ece5; --text:#1f2a24; --muted:#6a7b71; --wa:#25D366;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:var(--bg);color:var(--text);padding-bottom:64px;}
+  header{background:var(--green);color:#fff;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;}
+  header h1{font-size:18px;margin:0;}
+  header button{background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:12px;}
+  main{max-width:560px;margin:0 auto;padding:16px;}
+
+  .tabs{display:flex;gap:10px;margin-bottom:14px;}
+  .tabs button{flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card);font-size:15px;font-weight:600;color:var(--green-dark);}
+  .tabs button.active{background:var(--green);color:#fff;border-color:var(--green);}
+
+  #dateHeading{font-size:15px;color:var(--muted);margin:4px 0 10px;}
+
+  .entry{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+  .entry.done{opacity:.55;}
+  .entry.done .name{text-decoration:line-through;}
+  .entry-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .entry .name{font-weight:700;font-size:15px;}
+  .entry .note{font-size:13.5px;color:#334;margin-top:2px;}
+  .entry .addr{font-size:12.5px;color:var(--muted);margin-top:4px;}
+  .entry-actions{display:flex;align-items:center;gap:8px;margin-top:10px;}
+  .wa-btn{background:var(--wa);color:#fff;text-decoration:none;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+  .icon-btn{border:1px solid var(--border);background:#fff;border-radius:8px;padding:6px 9px;font-size:13px;cursor:pointer;}
+  .empty{color:var(--muted);font-size:14px;padding:18px 4px;text-align:center;}
+
+  #addBtn{width:100%;padding:13px;background:var(--green-dark);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;margin:6px 0 22px;}
+
+  .calendar{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;}
+  .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .cal-header button{background:none;border:none;font-size:18px;color:var(--green-dark);padding:4px 10px;}
+  .cal-header span{font-weight:700;font-size:14.5px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-dow{text-align:center;font-size:11px;color:var(--muted);padding-bottom:4px;}
+  .cal-day{position:relative;text-align:center;padding:9px 0;border-radius:8px;font-size:13px;cursor:pointer;color:var(--text);}
+  .cal-day.blank{visibility:hidden;}
+  .cal-day.today{font-weight:700;}
+  .cal-day.selected{background:var(--green);color:#fff;}
+  .cal-day.has-entry::after{content:"";position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--wa);}
+  .cal-day.selected.has-entry::after{background:#fff;}
+
+  .modal{position:fixed;inset:0;background:rgba(10,25,18,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50;}
+  .modal-card{background:#fff;border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:560px;max-height:88vh;overflow:auto;}
+  .modal-card h2{margin:0 0 14px;font-size:17px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px;}
+  .field input, .field textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;}
+  .modal-actions{display:flex;gap:10px;margin-top:16px;}
+  .modal-actions button{flex:1;padding:12px;border-radius:10px;border:none;font-size:14.5px;font-weight:600;}
+  .btn-cancel{background:#eef2ef;color:#333;}
+  .btn-save{background:var(--green);color:#fff;}
+
+  #pinGate{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;}
+  .pin-card{background:#fff;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.06);}
+  .pin-card h1{color:var(--green-dark);font-size:19px;margin-bottom:6px;}
+  .pin-card p{color:var(--muted);font-size:13px;margin-bottom:16px;}
+  .pin-card input{width:100%;padding:12px;font-size:18px;text-align:center;letter-spacing:4px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;}
+  .pin-card button{width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;}
+  .pin-error{color:#c0392b;font-size:12.5px;min-height:16px;margin-top:8px;}
+
+  footer{text-align:center;font-size:11.5px;color:var(--muted);padding:18px 14px 28px;}
+  footer a{color:var(--green-dark);text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div id="pinGate">
+  <div class="pin-card">
+    <h1>UVI Alert</h1>
+    <p>Enter your PIN to continue</p>
+    <input id="pinInput" type="password" inputmode="numeric" maxlength="12" placeholder="••••">
+    <button id="pinSubmit">Unlock</button>
+    <div class="pin-error" id="pinError"></div>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header>
+    <h1>📅 UVI Alert</h1>
+    <button id="lockBtn">Lock</button>
+  </header>
+  <main>
+    <div class="tabs">
+      <button id="todayBtn" class="active">Today</button>
+      <button id="tomorrowBtn">Tomorrow</button>
+    </div>
+
+    <div id="dateHeading"></div>
+    <div id="entryList"></div>
+    <button id="addBtn">+ Add Reminder</button>
+
+    <div class="calendar">
+      <div class="cal-header">
+        <button id="prevMonth">‹</button>
+        <span id="calLabel"></span>
+        <button id="nextMonth">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </main>
+
+  <footer>
+    Powered by <a href="https://anyapps.in" target="_blank" rel="noopener">AnyApps</a> ·
+    <a href="privacy.html">Privacy Policy</a> ·
+    Support: <a href="mailto:info.anyapps@gmail.com">info.anyapps@gmail.com</a>
+  </footer>
+</div>
+
+<div class="modal" id="addModal" hidden>
+  <div class="modal-card">
+    <h2>Add Reminder</h2>
+    <div class="field"><label>Date</label><input type="date" id="f_date"></div>
+    <div class="field"><label>Person's Name</label><input type="text" id="f_name" placeholder="e.g. Ramesh Patel"></div>
+    <div class="field"><label>Address</label><input type="text" id="f_address" placeholder="e.g. Shop no 4, Market Road"></div>
+    <div class="field"><label>Contact No.</label><input type="tel" id="f_contact" placeholder="e.g. 9876543210"></div>
+    <div class="field"><label>Reminder note</label><textarea id="f_note" rows="2" placeholder="e.g. Collect sample / pay pending amount"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="f_cancel">Cancel</button>
+      <button class="btn-save" id="f_save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://jqqnnkzozjskziaizajg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxcW5ua3pvempza3ppYWl6YWpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5Mjk1ODAsImV4cCI6MjA4ODUwNTU4MH0.sEYeWnm0dvuw8bLSVnQhqmgV8LB-pELjpuVIa3Us1Gg';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let PIN = localStorage.getItem('uvi_pin') || '';
+let entries = [];
+let selectedDate = isoDate(new Date());
+let calYear, calMonth;
+
+function isoDate(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function addDays(d, n){ const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+
+// ---------- PIN gate ----------
+const pinGate = document.getElementById('pinGate');
+const appEl = document.getElementById('app');
+const pinInput = document.getElementById('pinInput');
+const pinError = document.getElementById('pinError');
+
+async function tryUnlock(pin){
+  pinError.textContent = '';
+  const { data, error } = await sb.rpc('ua_verify_pin', { p_pin: pin });
+  if (error || data !== true) {
+    pinError.textContent = 'Wrong PIN, try again.';
+    return false;
+  }
+  PIN = pin;
+  localStorage.setItem('uvi_pin', pin);
+  pinGate.hidden = true;
+  appEl.hidden = false;
+  await loadEntries();
+  return true;
+}
+
+document.getElementById('pinSubmit').onclick = () => tryUnlock(pinInput.value.trim());
+pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(pinInput.value.trim()); });
+
+document.getElementById('lockBtn').onclick = () => {
+  localStorage.removeItem('uvi_pin');
+  PIN = '';
+  appEl.hidden = true;
+  pinInput.value = '';
+  pinGate.hidden = false;
+};
+
+// ---------- Data ----------
+async function loadEntries(){
+  const { data, error } = await sb.rpc('ua_list_entries', { p_pin: PIN });
+  if (error) { alert('Could not load reminders: ' + error.message); return; }
+  entries = data || [];
+  renderAll();
+}
+
+async function addEntry(payload){
+  const { error } = await sb.rpc('ua_add_entry', {
+    p_pin: PIN, p_date: payload.date, p_name: payload.name,
+    p_address: payload.address, p_contact: payload.contact, p_note: payload.note
+  });
+  if (error) { alert('Could not save: ' + error.message); return false; }
+  return true;
+}
+
+async function setStatus(id, status){
+  const { error } = await sb.rpc('ua_set_status', { p_pin: PIN, p_id: id, p_status: status });
+  if (error) { alert('Could not update: ' + error.message); return; }
+  await loadEntries();
+}
+
+async function deleteEntry(id){
+  const { error } = await sb.rpc('ua_delete_entry', { p_pin: PIN, p_id: id });
+  if (error) { alert('Could not delete: ' + error.message); return; }
+  await loadEntries();
+}
+
+// ---------- Rendering ----------
+function entriesForDate(dateStr){
+  return entries.filter(e => e.reminder_date === dateStr)
+    .sort((a,b) => (a.status === b.status) ? 0 : (a.status === 'pending' ? -1 : 1));
+}
+
+function waLink(contact, name, note){
+  let digits = (contact || '').replace(/\D/g, '');
+  if (digits.length === 10) digits = '91' + digits;
+  const msg = `Hi ${name}, this is a reminder: ${note && note.trim() ? note.trim() : 'please take the needed action'}.`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
+}
+
+function fmtHeading(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+}
+
+function renderList(){
+  document.getElementById('dateHeading').textContent = fmtHeading(selectedDate);
+  const list = entriesForDate(selectedDate);
+  const el = document.getElementById('entryList');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty">No reminders for this date.</div>';
+    return;
+  }
+  el.innerHTML = list.map(e => `
+    <div class="entry ${e.status === 'done' ? 'done' : ''}">
+      <div class="entry-top">
+        <div>
+          <div class="name">${escapeHtml(e.name)}</div>
+          ${e.note ? `<div class="note">${escapeHtml(e.note)}</div>` : ''}
+          ${e.address ? `<div class="addr">📍 ${escapeHtml(e.address)}</div>` : ''}
+        </div>
+      </div>
+      <div class="entry-actions">
+        <a class="wa-btn" href="${waLink(e.contact_no, e.name, e.note)}" target="_blank" rel="noopener">💬 ${escapeHtml(e.contact_no)}</a>
+        <button class="icon-btn" onclick="setStatus(${e.id}, '${e.status === 'done' ? 'pending' : 'done'}')">${e.status === 'done' ? '↺ Undo' : '✓ Done'}</button>
+        <button class="icon-btn" onclick="if(confirm('Delete this reminder?')) deleteEntry(${e.id})">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderCalendar(){
+  const first = new Date(calYear, calMonth, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const todayIso = isoDate(new Date());
+
+  document.getElementById('calLabel').textContent = first.toLocaleDateString('en-IN', { month:'long', year:'numeric' });
+
+  const dowRow = ['S','M','T','W','T','F','S'].map(d => `<div class="cal-dow">${d}</div>`).join('');
+  let cells = '';
+  for (let i = 0; i < startDow; i++) cells += '<div class="cal-day blank"></div>';
+  for (let day = 1; day <= daysInMonth; day++) {
+    const iso = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+    const hasEntry = entries.some(e => e.reminder_date === iso);
+    const classes = ['cal-day'];
+    if (iso === todayIso) classes.push('today');
+    if (iso === selectedDate) classes.push('selected');
+    if (hasEntry) classes.push('has-entry');
+    cells += `<div class="${classes.join(' ')}" onclick="selectDate('${iso}')">${day}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML = dowRow + cells;
+}
+
+function selectDate(iso){
+  selectedDate = iso;
+  syncTabHighlight();
+  renderAll();
+}
+
+function syncTabHighlight(){
+  const todayIso = isoDate(new Date());
+  const tomorrowIso = isoDate(addDays(new Date(), 1));
+  document.getElementById('todayBtn').classList.toggle('active', selectedDate === todayIso);
+  document.getElementById('tomorrowBtn').classList.toggle('active', selectedDate === tomorrowIso);
+}
+
+function renderAll(){
+  renderList();
+  renderCalendar();
+}
+
+document.getElementById('todayBtn').onclick = () => {
+  selectedDate = isoDate(new Date());
+  const d = new Date(selectedDate + 'T00:00:00');
+  calYear = d.getFullYear(); calMonth = d.getMonth();
+  syncTabHighlight();
+  renderAll();
+};
+document.getElementById('tomorrowBtn').onclick = () => {
+  selectedDate = isoDate(addDays(new Date(), 1));
+  const d = new Date(selectedDate + 'T00:00:00');
+  calYear = d.getFullYear(); calMonth = d.getMonth();
+  syncTabHighlight();
+  renderAll();
+};
+document.getElementById('prevMonth').onclick = () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); };
+document.getElementById('nextMonth').onclick = () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); };
+
+// ---------- Add modal ----------
+const addModal = document.getElementById('addModal');
+document.getElementById('addBtn').onclick = () => {
+  document.getElementById('f_date').value = selectedDate;
+  document.getElementById('f_name').value = '';
+  document.getElementById('f_address').value = '';
+  document.getElementById('f_contact').value = '';
+  document.getElementById('f_note').value = '';
+  addModal.hidden = false;
+};
+document.getElementById('f_cancel').onclick = () => { addModal.hidden = true; };
+document.getElementById('f_save').onclick = async () => {
+  const date = document.getElementById('f_date').value;
+  const name = document.getElementById('f_name').value.trim();
+  const address = document.getElementById('f_address').value.trim();
+  const contact = document.getElementById('f_contact').value.trim();
+  const note = document.getElementById('f_note').value.trim();
+  if (!date || !name || !contact) { alert('Date, Name and Contact No. are required.'); return; }
+  const ok = await addEntry({ date, name, address, contact, note });
+  if (ok) {
+    addModal.hidden = true;
+    selectedDate = date;
+    await loadEntries();
+    syncTabHighlight();
+  }
+};
+
+// ---------- Boot ----------
+(function init(){
+  const d = new Date();
+  calYear = d.getFullYear(); calMonth = d.getMonth();
+  if (PIN) {
+    tryUnlock(PIN).then(ok => { if (!ok) { pinGate.hidden = false; appEl.hidden = true; } });
+  }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>

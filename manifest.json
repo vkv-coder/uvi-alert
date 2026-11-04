@@ -1,0 +1,14 @@
+{
+  "name": "UVI Alert",
+  "short_name": "UVI Alert",
+  "description": "Date-wise reminder tool with one-tap WhatsApp alerts.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F4FBF6",
+  "theme_color": "#1E7D4B",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
